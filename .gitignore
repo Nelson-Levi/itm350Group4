@@ -210,3 +210,7 @@ yalc.lock
 .env.tinybird
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+
+# Our additions, .env and *.log are already here
+ghost_data/
+.DS_Store
