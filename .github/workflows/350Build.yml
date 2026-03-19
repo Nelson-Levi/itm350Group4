@@ -22,3 +22,9 @@ jobs:
                docker build -t  ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest . 
                docker push ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest
 
+            - name: Log into Docker Hub
+              run: echo "${{ secrets.DOCKER_HAYDEN_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HAYDEN_USERNAME }}" --password-stdin
+            - name: Build Docker Image
+              run: |
+               docker build -t  ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest . 
+               docker push ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest
