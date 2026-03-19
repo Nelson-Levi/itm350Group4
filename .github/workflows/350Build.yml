@@ -16,9 +16,9 @@ jobs:
               uses: actions/checkout@v3
             
             - name: Log into Docker Hub
-              run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+              run: echo "${{ secrets.DOCKER_LEVI_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_LEVI_USERNAME }}" --password-stdin
             - name: Build Docker Image
               run: |
-               docker build -t  ${{ secrets.DOCKER_USERNAME }}/ghost:latest . 
-               docker push ${{ secrets.DOCKER_USERNAME }}/ghost:latest
+               docker build -t  ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest . 
+               docker push ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest
 
