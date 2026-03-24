@@ -30,7 +30,7 @@ jobs:
                docker push ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest
 
             - name: Log into Docker Hub
-              run: echo "${{ secrets.DOCKER_EMA_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_LEVI_USERNAME }}" --password-stdin
+              run: echo "${{ secrets.DOCKER_EMA_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_EMA_USERNAME }}" --password-stdin
             - name: Build Docker Image
               run: |
                docker build -t  ${{ secrets.DOCKER_EMA_USERNAME }}/ghost:latest . 
