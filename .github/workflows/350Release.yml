@@ -1,4 +1,4 @@
-name: ITM 350 Build Pipeline
+name: ITM 350 Release Pipeline
 
 on:
     workflow_dispatch: 
