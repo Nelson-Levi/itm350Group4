@@ -73,7 +73,7 @@ resource "aws_instance" "ghost" {
 }
 
 resource "aws_s3_bucket" "ghost_bucket" {
-  bucket = "ghost-devops-bucket-12345"  # Change this to any unique name
+  bucket = "ghost-devops-bucket-12345" 
 
   tags = {
     Name = "ghost-devops"
