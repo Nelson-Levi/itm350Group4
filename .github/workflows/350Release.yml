@@ -4,7 +4,7 @@ on:
     workflow_dispatch: 
 
 jobs:
-    BuildPipeline:
+    ReleasePipeline:
         runs-on: ubuntu-latest
         steps:
             - run: echo "Hello World"
@@ -45,6 +45,7 @@ jobs:
               env:
                 AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                 AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
             - name: Terraform Plan
               working-directory: ./iac
@@ -52,3 +53,4 @@ jobs:
               env:
                 AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                 AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
