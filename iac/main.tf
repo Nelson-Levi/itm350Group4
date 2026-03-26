@@ -15,7 +15,7 @@ data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
   filter {
-    name   = "name"
+    name   = "Ghost"
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
@@ -73,7 +73,7 @@ resource "aws_instance" "ghost" {
 }
 
 resource "aws_s3_bucket" "ghost_bucket" {
-  bucket = "ghost-devops-bucket-12345"  # Change this to any unique name
+  bucket = "ghost-devops-s3bucket" 
 
   tags = {
     Name = "ghost-devops"
