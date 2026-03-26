@@ -40,7 +40,7 @@ jobs:
                 terraform_version: latest
 
             - name: Terraform Init
-              run: 
+              run: |
                 cd ..\..\iac
                 terraform init
               env:
