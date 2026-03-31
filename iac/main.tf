@@ -89,51 +89,6 @@ resource "aws_ecs_cluster" "ghost" {
   name = "ghost-cluster"
 }
 
-
-resource "aws_ecs_task_definition" "ghost" {
-  family                   = "ghost-task"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn = "arn:aws:iam::851725372200:role/LabRole"
-
-  container_definitions = jsonencode([
-    {
-      name  = "ghost"
-      image = "nellevi/ghost-devops:latest"
-
-      portMappings = [
-        {
-          containerPort = 2368
-          hostPort      = 2368
-        }
-      ]
-
-      environment = [
-        {
-          name  = "url"
-          value = "http://localhost:2368"
-        }
-      ]
-    }
-  ])
-}
-
-resource "aws_ecs_service" "ghost" {
-  name            = "ghost-service"
-  cluster         = aws_ecs_cluster.ghost.id
-  task_definition = aws_ecs_task_definition.ghost.arn
-  launch_type     = "FARGATE"
-  desired_count   = 1
-
-  network_configuration {
-    subnets = data.aws_subnets.default.ids
-    security_groups = [aws_security_group.ghost_sg.id]
-    assign_public_ip = true
-  }
-}
-
 data "aws_vpc" "default" {
   default = true
 }
