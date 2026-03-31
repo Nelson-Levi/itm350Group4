@@ -239,4 +239,4 @@ output "ghost_bucket" {
   value       = aws_s3_bucket.ghost_bucket.bucket
 }
 
-# to push
+# to push again
