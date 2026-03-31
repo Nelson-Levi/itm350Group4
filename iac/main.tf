@@ -5,6 +5,12 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket = "ghost-project-bucket-levi-12345"  # your existing bucket
+    key    = "terraform/state.tfstate"
+    region = "us-east-1"
+  }
 }
 
 provider "aws" {
@@ -72,47 +78,16 @@ resource "aws_instance" "ghost" {
   }
 }
 
-resource "aws_s3_bucket" "ghost_bucket" {
-  bucket = "ghost-project-bucket" 
 
-  tags = {
-    Name = "ghost-devops"
-  }
+
+data "aws_s3_bucket" "ghost_bucket" {
+  bucket = "ghost-project-bucket"
 }
-
-resource "aws_s3_bucket_public_access_block" "ghost_bucket_block" {
-  bucket = aws_s3_bucket.ghost_bucket.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 
 resource "aws_ecs_cluster" "ghost" {
   name = "ghost-cluster"
 }
 
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole"
-
-  assume_role_policy = jsonencode({
-    Version = "2008-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
 
 resource "aws_ecs_task_definition" "ghost" {
   family                   = "ghost-task"
