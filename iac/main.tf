@@ -13,7 +13,6 @@ terraform {
   }
 }
 
-terraform import aws_security_group.ghost_sg sg-00f885cca1f1b36eb
 
 provider "aws" {
   region = "us-east-1"
