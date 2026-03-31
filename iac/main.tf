@@ -18,7 +18,7 @@ provider "aws" {
 variable "ecs_task_execution_role_name" {
   description = "Existing IAM role name for ECS task execution"
   type        = string
-  default     = "LabRole"
+  default     = "AWSServiceRoleForECS"
 }
 
 resource "random_id" "suffix" {
@@ -147,7 +147,7 @@ resource "aws_ecs_task_definition" "ghost" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::851725372200:role/LabRole"
+  execution_role_arn       = "arn:aws:iam::851725372200:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
 
   container_definitions = jsonencode([
     {
