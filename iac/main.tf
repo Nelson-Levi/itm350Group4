@@ -72,10 +72,10 @@ resource "aws_instance" "ghost" {
                 --restart always \
                 -p 2368:2368 \
                 -e url=http://$(curl -s ifconfig.me):2368 \
-                nellevi/ghost-devops:latest
+                nellevi/ghost:latest
               EOF
   tags = {
-    Name = "ghost-devops"
+    Name = "ghost"
   }
 }
 
