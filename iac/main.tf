@@ -7,7 +7,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "ghost-project-bucket-levi-12345"  # your existing bucket
+    bucket = "ghost-project-bucket"  # your existing bucket
     key    = "terraform/state.tfstate"
     region = "us-east-1"
   }
