@@ -224,8 +224,8 @@ resource "aws_s3_bucket_public_access_block" "ghost_bucket_block" {
   restrict_public_buckets = true
 }
 
-output "ec2_public_ip" {
-  description = "Public endpoint for Ghost through ALB"
+output "alb_dns_name" {
+  description = "ALB DNS name for Ghost"
   value       = aws_lb.ghost.dns_name
 }
 
@@ -238,5 +238,3 @@ output "ghost_bucket" {
   description = "Name of the S3 bucket"
   value       = aws_s3_bucket.ghost_bucket.bucket
 }
-
-# to push again
