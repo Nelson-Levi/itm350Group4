@@ -5,7 +5,14 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket = "ghost-project-bucket"  
+    key    = "terraform/state.tfstate"
+    region = "us-east-1"
+  }
 }
+
 
 provider "aws" {
   region = "us-east-1"
@@ -21,7 +28,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 resource "aws_security_group" "ghost_sg" {
-  name        = "ghost-security-group"
+  name_prefix        = "ghost-sg"
   description = "Allow HTTP and SSH traffic"
   ingress {
     description = "SSH"
@@ -59,101 +66,36 @@ resource "aws_instance" "ghost" {
               yum install -y docker
               systemctl start docker
               systemctl enable docker
-              docker pull nellevi/ghost-devops:latest
+              docker pull nellevi/ghost:latest
               docker run -d \
                 --name ghost \
                 --restart always \
                 -p 2368:2368 \
                 -e url=http://$(curl -s ifconfig.me):2368 \
-                nellevi/ghost-devops:latest
+                nellevi/ghost:latest
               EOF
   tags = {
-    Name = "ghost-devops"
+    Name = "ghost"
   }
 }
 
-resource "aws_s3_bucket" "ghost_bucket" {
-  bucket = "ghost-project-bucket" 
 
-  tags = {
-    Name = "ghost-devops"
-  }
+
+data "aws_s3_bucket" "ghost_bucket" {
+  bucket = "ghost-project-bucket"
 }
-
-resource "aws_s3_bucket_public_access_block" "ghost_bucket_block" {
-  bucket = aws_s3_bucket.ghost_bucket.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 
 resource "aws_ecs_cluster" "ghost" {
   name = "ghost-cluster"
 }
 
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole"
-
-  assume_role_policy = jsonencode({
-    Version = "2008-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
+data "aws_vpc" "default" {
+  default = true
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-resource "aws_ecs_task_definition" "ghost" {
-  family                   = "ghost-task"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-
-  container_definitions = jsonencode([
-    {
-      name  = "ghost"
-      image = "nellevi/ghost-devops:latest"
-
-      portMappings = [
-        {
-          containerPort = 2368
-          hostPort      = 2368
-        }
-      ]
-
-      environment = [
-        {
-          name  = "url"
-          value = "http://localhost:2368"
-        }
-      ]
-    }
-  ])
-}
-
-resource "aws_ecs_service" "ghost" {
-  name            = "ghost-service"
-  cluster         = aws_ecs_cluster.ghost.id
-  task_definition = aws_ecs_task_definition.ghost.arn
-  launch_type     = "FARGATE"
-  desired_count   = 1
-
-  network_configuration {
-    subnets         = aws_subnet.public[*].id
-    security_groups = [aws_security_group.ghost_sg.id]
-    assign_public_ip = true
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
