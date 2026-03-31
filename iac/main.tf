@@ -152,8 +152,19 @@ resource "aws_ecs_service" "ghost" {
   desired_count   = 1
 
   network_configuration {
-    subnets         = aws_subnet.public[*].id
+    subnets = data.aws_subnets.default.ids
     security_groups = [aws_security_group.ghost_sg.id]
     assign_public_ip = true
+  }
+}
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
