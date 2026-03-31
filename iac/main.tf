@@ -7,11 +7,13 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "ghost-project-bucket"  # your existing bucket
+    bucket = "ghost-project-bucket"  
     key    = "terraform/state.tfstate"
     region = "us-east-1"
   }
 }
+
+terraform import aws_security_group.ghost_sg sg-00f885cca1f1b36eb
 
 provider "aws" {
   region = "us-east-1"
