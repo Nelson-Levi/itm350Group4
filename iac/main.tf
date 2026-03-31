@@ -207,23 +207,6 @@ resource "aws_ecs_service" "ghost" {
   ]
 }
 
-resource "aws_s3_bucket" "ghost_bucket" {
-  bucket = "ghost-project-bucket"
-
-  tags = {
-    Name = "ghost-devops"
-  }
-}
-
-resource "aws_s3_bucket_public_access_block" "ghost_bucket_block" {
-  bucket = aws_s3_bucket.ghost_bucket.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 output "alb_dns_name" {
   description = "ALB DNS name for Ghost"
   value       = aws_lb.ghost.dns_name
@@ -234,7 +217,4 @@ output "ghost_url" {
   value       = "http://${aws_lb.ghost.dns_name}"
 }
 
-output "ghost_bucket" {
-  description = "Name of the S3 bucket"
-  value       = aws_s3_bucket.ghost_bucket.bucket
-}
+
