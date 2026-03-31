@@ -122,27 +122,6 @@ resource "aws_ecs_cluster" "ghost" {
   name = "ghost-cluster"
 }
 
-resource "aws_iam_role" "ecs_task_execution" {
-  name = "ghost-ecs-task-execution-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
-  role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
 
 resource "aws_ecs_task_definition" "ghost" {
   family                   = "ghost-task"
@@ -150,7 +129,7 @@ resource "aws_ecs_task_definition" "ghost" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  execution_role_arn       = "arn:aws:iam::851725372200:role/LabRole"
 
   container_definitions = jsonencode([
     {
@@ -202,8 +181,7 @@ resource "aws_ecs_service" "ghost" {
   }
 
   depends_on = [
-    aws_lb_listener.ghost_http,
-    aws_iam_role_policy_attachment.ecs_task_execution
+    aws_lb_listener.ghost_http
   ]
 }
 
