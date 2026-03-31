@@ -66,7 +66,7 @@ resource "aws_instance" "ghost" {
               yum install -y docker
               systemctl start docker
               systemctl enable docker
-              docker pull nellevi/ghost-devops:latest
+              docker pull nellevi/ghost:latest
               docker run -d \
                 --name ghost \
                 --restart always \
