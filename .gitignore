@@ -214,3 +214,7 @@ yalc.lock
 # Our additions, .env and *.log are already here
 ghost_data/
 .DS_Store
+
+# Terraform local artifacts
+.terraform/
+/iac/.terraform/

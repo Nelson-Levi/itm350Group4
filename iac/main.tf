@@ -4,11 +4,29 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
 provider "aws" {
   region = "us-east-1"
+}
+
+variable "ecs_task_execution_role_name" {
+  description = "Existing IAM role name for ECS task execution"
+  type        = string
+  default     = "LabRole"
+}
+
+resource "random_id" "suffix" {
+  byte_length = 3
+}
+
+data "aws_iam_role" "ecs_task_execution" {
+  name = var.ecs_task_execution_role_name
 }
 
 data "aws_vpc" "default" {
@@ -23,7 +41,7 @@ data "aws_subnets" "default" {
 }
 
 resource "aws_security_group" "alb_sg" {
-  name        = "ghost-alb-sg"
+  name_prefix = "ghost-alb-"
   description = "Allow HTTP to ALB"
   vpc_id      = data.aws_vpc.default.id
 
@@ -48,7 +66,7 @@ resource "aws_security_group" "alb_sg" {
 }
 
 resource "aws_security_group" "ecs_service_sg" {
-  name        = "ghost-ecs-service-sg"
+  name_prefix = "ghost-ecs-service-"
   description = "Allow ALB traffic to ECS tasks"
   vpc_id      = data.aws_vpc.default.id
 
@@ -73,7 +91,7 @@ resource "aws_security_group" "ecs_service_sg" {
 }
 
 resource "aws_lb" "ghost" {
-  name               = "ghost-alb"
+  name               = "ghost-alb-${random_id.suffix.hex}"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -85,7 +103,7 @@ resource "aws_lb" "ghost" {
 }
 
 resource "aws_lb_target_group" "ghost" {
-  name        = "ghost-tg"
+  name        = "ghost-tg-${random_id.suffix.hex}"
   port        = 2368
   protocol    = "HTTP"
   target_type = "ip"
@@ -114,43 +132,21 @@ resource "aws_lb_listener" "ghost_http" {
 }
 
 resource "aws_cloudwatch_log_group" "ghost" {
-  name              = "/ecs/ghost"
+  name              = "/ecs/ghost-${random_id.suffix.hex}"
   retention_in_days = 7
 }
 
 resource "aws_ecs_cluster" "ghost" {
-  name = "ghost-cluster"
-}
-
-resource "aws_iam_role" "ecs_task_execution" {
-  name = "ghost-ecs-task-execution-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
-  role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  name = "ghost-cluster-${random_id.suffix.hex}"
 }
 
 resource "aws_ecs_task_definition" "ghost" {
-  family                   = "ghost-task"
+  family                   = "ghost-task-${random_id.suffix.hex}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  execution_role_arn       = data.aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
@@ -183,7 +179,7 @@ resource "aws_ecs_task_definition" "ghost" {
 }
 
 resource "aws_ecs_service" "ghost" {
-  name            = "ghost-service"
+  name            = "ghost-service-${random_id.suffix.hex}"
   cluster         = aws_ecs_cluster.ghost.id
   task_definition = aws_ecs_task_definition.ghost.arn
   desired_count   = 1
@@ -202,8 +198,7 @@ resource "aws_ecs_service" "ghost" {
   }
 
   depends_on = [
-    aws_lb_listener.ghost_http,
-    aws_iam_role_policy_attachment.ecs_task_execution
+    aws_lb_listener.ghost_http
   ]
 }
 
