@@ -89,17 +89,71 @@ resource "aws_s3_bucket_public_access_block" "ghost_bucket_block" {
   restrict_public_buckets = true
 }
 
-output "ec2_public_ip" {
-  description = "Public IP of the Ghost EC2 instance"
-  value       = aws_instance.ghost.public_ip
+
+resource "aws_ecs_cluster" "ghost" {
+  name = "ghost-cluster"
 }
 
-output "ghost_url" {
-  description = "URL to access Ghost"
-  value       = "http://${aws_instance.ghost.public_ip}:2368"
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecsTaskExecutionRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2008-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
 }
 
-output "ghost_bucket" {
-  description = "Name of the S3 bucket"
-  value       = aws_s3_bucket.ghost_bucket.bucket
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_ecs_task_definition" "ghost" {
+  family                   = "ghost-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "ghost"
+      image = "nellevi/ghost-devops:latest"
+
+      portMappings = [
+        {
+          containerPort = 2368
+          hostPort      = 2368
+        }
+      ]
+
+      environment = [
+        {
+          name  = "url"
+          value = "http://localhost:2368"
+        }
+      ]
+    }
+  ])
+}
+
+resource "aws_ecs_service" "ghost" {
+  name            = "ghost-service"
+  cluster         = aws_ecs_cluster.ghost.id
+  task_definition = aws_ecs_task_definition.ghost.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  network_configuration {
+    subnets         = aws_subnet.public[*].id
+    security_groups = [aws_security_group.ghost_sg.id]
+    assign_public_ip = true
+  }
 }
