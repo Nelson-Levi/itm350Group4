@@ -200,7 +200,6 @@ resource "aws_ecs_service" "ghost" {
 
   depends_on = [
     aws_lb_listener.ghost_http
-    aws_lb_listener.ghost_http
   ]
 }
 
