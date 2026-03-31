@@ -238,3 +238,5 @@ output "ghost_bucket" {
   description = "Name of the S3 bucket"
   value       = aws_s3_bucket.ghost_bucket.bucket
 }
+
+# to push
