@@ -28,7 +28,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 resource "aws_security_group" "ghost_sg" {
-  name        = "ghost-security-group"
+  name_prefix        = "ghost-sg"
   description = "Allow HTTP and SSH traffic"
   ingress {
     description = "SSH"
