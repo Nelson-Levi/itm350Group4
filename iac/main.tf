@@ -120,7 +120,7 @@ resource "aws_ecs_task_definition" "ghost" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  execution_role_arn = "arn:aws:iam::851725372200:role/LabRole"
 
   container_definitions = jsonencode([
     {
