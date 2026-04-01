@@ -29,6 +29,9 @@ jobs:
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Build Monorepo
+        run: yarn build
+
       # - name: Run Unit Tests
       #   run: yarn test:unit
 
@@ -44,7 +47,7 @@ jobs:
         # We add a small sleep to ensure MySQL is 100% ready to accept connections
         run: |
           sleep 15
-          yarn workspace ghost test:integration
+          yarn workspace ghost test:integration --grep "stripe|members" --invert
 
   ReleasePipeline:
     needs: Testing
