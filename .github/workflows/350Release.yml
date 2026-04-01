@@ -1,64 +1,111 @@
 name: ITM 350 Release Pipeline
 
 on:
-    workflow_dispatch: 
+  workflow_dispatch: 
 
 jobs:
-    ReleasePipeline:
-        runs-on: ubuntu-latest
-        steps:
-            - run: echo "Hello World"
+  Testing:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ghost_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
-            - name: Checkout Repository  
-              uses: actions/checkout@v3
-            
-            # This will create a docker image on EACH of our personal docker hubs. :)
-            - name: Log into Docker Hub
-              run: echo "${{ secrets.DOCKER_LEVI_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_LEVI_USERNAME }}" --password-stdin
-            - name: Build Docker Image
-              run: |
-               docker build -t  ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest . 
-               docker push ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-            - name: Log into Docker Hub
-              run: echo "${{ secrets.DOCKER_HAYDEN_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HAYDEN_USERNAME }}" --password-stdin
-            - name: Build Docker Image
-              run: |
-               docker build -t  ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest . 
-               docker push ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'yarn'
 
-            - name: Log into Docker Hub
-              run: echo "${{ secrets.DOCKER_EMA_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_EMA_USERNAME }}" --password-stdin
-            - name: Build Docker Image
-              run: |
-               docker build -t  ${{ secrets.DOCKER_EMA_USERNAME }}/ghost:latest . 
-               docker push ${{ secrets.DOCKER_EMA_USERNAME }}/ghost:latest
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
 
-            - name: Set up Terraform
-              uses: hashicorp/setup-terraform@v3
-              with:
-                terraform_version: latest
+      - name: Build Monorepo
+        run: yarn build
 
-            - name: Terraform Init
-              working-directory: ./iac
-              run: terraform init
-              env:
-                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      - name: Run Unit Tests
+        run: yarn test:unit
 
-            - name: Terraform Plan
-              working-directory: ./iac
-              run: terraform plan
-              env:
-                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      - name: Run Integration Tests
+        env:
+          database__client: mysql
+          database__connection__host: 127.0.0.1
+          database__connection__user: root
+          database__connection__password: root
+          database__connection__database: ghost_test
+          GHOST_UNIT_TEST_VARIANT: all 
+          NODE_ENV: testing
+        run: |
+          sleep 15
+          yarn workspace ghost test:integration --grep "stripe|members" --invert
 
-            - name: Terraform Apply
-              working-directory: ./iac
-              run: terraform apply -auto-approve
-              env: 
-                AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+  ReleasePipeline:
+    needs: Testing
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello World"
+
+      - name: Checkout Repository  
+        uses: actions/checkout@v3
+      
+      - name: Log into Docker Hub (Levi)
+        run: echo "${{ secrets.DOCKER_LEVI_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_LEVI_USERNAME }}" --password-stdin
+      
+      - name: Build Docker Image (Levi)
+        run: |
+          docker build -t ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest . 
+          docker push ${{ secrets.DOCKER_LEVI_USERNAME }}/ghost:latest
+
+      - name: Log into Docker Hub (Hayden)
+        run: echo "${{ secrets.DOCKER_HAYDEN_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HAYDEN_USERNAME }}" --password-stdin
+      
+      - name: Build Docker Image (Hayden)
+        run: |
+          docker build -t ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest . 
+          docker push ${{ secrets.DOCKER_HAYDEN_USERNAME }}/ghost:latest
+
+      - name: Log into Docker Hub (Ema)
+        run: echo "${{ secrets.DOCKER_EMA_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_EMA_USERNAME }}" --password-stdin
+      
+      - name: Build Docker Image (Ema)
+        run: |
+          docker build -t ${{ secrets.DOCKER_EMA_USERNAME }}/ghost:latest . 
+          docker push ${{ secrets.DOCKER_EMA_USERNAME }}/ghost:latest
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        working-directory: ./iac
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Terraform Plan
+        working-directory: ./iac
+        run: terraform plan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Terraform Apply
+        working-directory: ./iac
+        run: terraform apply -auto-approve
+        env: 
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
