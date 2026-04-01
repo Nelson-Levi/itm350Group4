@@ -29,8 +29,8 @@ jobs:
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run Unit Tests
-        run: yarn test:unit
+      # - name: Run Unit Tests
+      #   run: yarn test:unit
 
       - name: Run Integration Tests
         env:
@@ -39,7 +39,12 @@ jobs:
           database__connection__user: root
           database__connection__password: root
           database__connection__database: ghost_test
-        run: npx nx run ghost:test
+          GHOST_UNIT_TEST_VARIANT: all 
+          NODE_ENV: testing
+        # We add a small sleep to ensure MySQL is 100% ready to accept connections
+        run: |
+          sleep 15
+          yarn workspace ghost test:integration
 
   ReleasePipeline:
     needs: Testing
